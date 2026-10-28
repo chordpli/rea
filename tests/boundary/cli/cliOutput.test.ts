@@ -973,6 +973,22 @@ describe("unknown MCP subcommand output", () => {
       expect(delimited.stdout).toContain(
         "rea mcp add --format csv --filter-output cta.commands --columns command",
       );
+      // A suggestion that would not replay the caller's tokens is omitted.
+      const spaced = await cli.run({
+        arguments: ["mcp", "ad", "--command", "/path with spaces", "--json"],
+      });
+      expect(spaced.json).toMatchObject({
+        message: "'ad' is not a command for 'rea mcp'. Did you mean 'add'?",
+        cta: {
+          commands: [
+            {
+              command: "rea mcp --help",
+              description: "see all available commands",
+            },
+          ],
+        },
+      });
+      expect(spaced.stdout).not.toContain("rea mcp add");
       const redacted = await cli.run({
         arguments: ["mcp", "s3cret", "--sensitive-value", "s3cret", "--json"],
       });

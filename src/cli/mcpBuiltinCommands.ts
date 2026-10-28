@@ -37,6 +37,8 @@ const PRECEDING_BUILTIN_FLAGS: ReadonlySet<string> = new Set([
   "--mcp",
 ]);
 
+const PLAIN_SHELL_WORD = /^[\w./@%+=:,-]+$/u;
+
 /**
  * Incur 0.6.1 rejects an unknown `mcp` subcommand in TOON regardless of the
  * selected format. Report the same envelope in the explicitly selected format;
@@ -80,16 +82,21 @@ export const reportUnknownMcpSubcommand = (
   const suggestion = [...MCP_BUILTIN_SUBCOMMANDS.keys()].find((candidate) =>
     candidate.startsWith(subcommand.toLowerCase()),
   );
+  const corrected = arguments_.map((token, index) =>
+    index === commandIndices[1] ? suggestion : token,
+  );
+  // Joined tokens replay only when each one is a plain word in every shell;
+  // quoting is shell-specific, and a redacted value cannot be replayed.
+  const replayable =
+    suggestion !== undefined &&
+    corrected.every(
+      (token) =>
+        token !== undefined &&
+        PLAIN_SHELL_WORD.test(token) &&
+        text(token) === token,
+    );
   const commands = [
-    ...(suggestion === undefined
-      ? []
-      : [
-          {
-            command: text(
-              `${name} ${arguments_.map((token, index) => (index === commandIndices[1] ? suggestion : token)).join(" ")}`,
-            ),
-          },
-        ]),
+    ...(replayable ? [{ command: `${name} ${corrected.join(" ")}` }] : []),
     {
       command: `${name} mcp --help`,
       description: "see all available commands",
