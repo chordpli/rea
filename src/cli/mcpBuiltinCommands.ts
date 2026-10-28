@@ -1,6 +1,7 @@
 import { Formatter, z } from "incur";
 
 import {
+  adaptCliOutputArgumentsForIncur,
   declaredSensitiveValues,
   splitIncurBuiltinArguments,
 } from "../cliBuiltinArguments.js";
@@ -27,11 +28,21 @@ export const MCP_BUILTIN_SUBCOMMANDS = new Map([
   ["doctor", { description: "Validate MCP server startup and tool listing" }],
 ]);
 
+/** Incur 0.6.1 builtins that it serves before its `mcp` subcommand branch. */
+const PRECEDING_BUILTIN_FLAGS: ReadonlySet<string> = new Set([
+  "--incur-update-check",
+  "--update",
+  "--llms",
+  "--llms-full",
+  "--mcp",
+]);
+
 /**
  * Incur 0.6.1 rejects an unknown `mcp` subcommand in TOON regardless of the
  * selected format. Report the same envelope in the explicitly selected format;
  * without one, Incur's TOON or human rendering is already the selected output.
- * The arguments are the ones Incur receives, after REA's output adaptation.
+ * The arguments are the caller's normalized ones, before REA adapts output
+ * flags for Incur, so the suggested command keeps the caller's selection.
  */
 export const reportUnknownMcpSubcommand = (
   name: string,
@@ -47,10 +58,13 @@ export const reportUnknownMcpSubcommand = (
     subcommand.startsWith("-") ||
     MCP_BUILTIN_SUBCOMMANDS.has(subcommand) ||
     // Incur handles these builtins before its `mcp` subcommand branch.
-    arguments_.some((token) => token === "--mcp" || token === "--update")
+    arguments_.some((token) => PRECEDING_BUILTIN_FLAGS.has(token))
   )
     return false;
-  const output = parseCliOutputArguments(arguments_);
+  // Incur receives JSON for REA's delimited formats.
+  const output = parseCliOutputArguments(
+    adaptCliOutputArgumentsForIncur(arguments_),
+  );
   // Invalid output controls keep Incur's own parse diagnostic.
   if (!output.formatExplicit || !output.validation.ok) return false;
   const sensitive = declaredSensitiveValues(command);

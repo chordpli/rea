@@ -932,6 +932,29 @@ describe("unknown MCP subcommand output", () => {
       expect(optionValue.json).toMatchObject({
         cta: { commands: [{ command: "rea mcp add --command ad --json" }, {}] },
       });
+      // Builtins Incur serves before its mcp branch keep their own output.
+      const manifest = await cli.run({
+        arguments: ["mcp", "bogus", "--llms", "--json"],
+      });
+      expect(manifest.exitCode).toBe(0);
+      expect(manifest.stdout).not.toContain("COMMAND_NOT_FOUND");
+      // The suggestion keeps the caller's delimited output selection.
+      const delimited = await cli.run({
+        arguments: [
+          "mcp",
+          "ad",
+          "--format",
+          "csv",
+          "--filter-output",
+          "cta.commands",
+          "--columns",
+          "command",
+        ],
+      });
+      expect(delimited.exitCode).toBe(1);
+      expect(delimited.stdout).toContain(
+        "rea mcp add --format csv --filter-output cta.commands --columns command",
+      );
       const redacted = await cli.run({
         arguments: ["mcp", "s3cret", "--sensitive-value", "s3cret", "--json"],
       });

@@ -214,14 +214,16 @@ export const createCli = (
           options ?? {},
           (tokens, selected) =>
             serveDeclared(tokens, selected, (declared, declaredOptions) => {
-              const incurArguments = adaptCliOutputArgumentsForIncur(declared);
               return reportUnknownMcpSubcommand(
                 cli.name,
-                incurArguments,
+                declared,
                 declaredOptions,
               )
                 ? Promise.resolve()
-                : serve(incurArguments, declaredOptions);
+                : serve(
+                    adaptCliOutputArgumentsForIncur(declared),
+                    declaredOptions,
+                  );
             }),
         );
   return cli;
