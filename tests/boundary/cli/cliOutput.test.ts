@@ -1002,6 +1002,18 @@ describe("unknown MCP subcommand output", () => {
           cta: { commands: [{ command: "rea mcp --help" }] },
         });
       }
+      // Markdown output escapes caller text through REA's document renderer.
+      const emphasis = await cli.run({
+        arguments: ["mcp", "*oops*", "--format", "md"],
+      });
+      expect(emphasis.exitCode).toBe(1);
+      expect(emphasis.stdout).toContain("'\\*oops\\*' is not a command");
+      // A declared literal is redacted from fixed call-to-action text too.
+      const fixedText = await cli.run({
+        arguments: ["mcp", "bogus", "--sensitive-value", "help", "--json"],
+      });
+      expect(fixedText.exitCode).toBe(1);
+      expect(fixedText.stdout).not.toContain("help");
       const redacted = await cli.run({
         arguments: ["mcp", "s3cret", "--sensitive-value", "s3cret", "--json"],
       });

@@ -1,11 +1,15 @@
-import { Formatter, z } from "incur";
+import { z } from "incur";
 
 import {
   adaptCliOutputArgumentsForIncur,
   declaredSensitiveValues,
   splitIncurBuiltinArguments,
 } from "../cliBuiltinArguments.js";
-import { parseCliOutputArguments, renderCliDocument } from "../cliOutput.js";
+import {
+  parseCliOutputArguments,
+  renderCliDocument,
+  type CliOutputFormat,
+} from "../cliOutput.js";
 import { redactExplicitText } from "../domain/explicitSensitiveValues.js";
 import type { CliInstance } from "./types.js";
 
@@ -99,8 +103,8 @@ export const reportUnknownMcpSubcommand = (
   const commands = [
     ...(replayable ? [{ command: `${name} ${corrected.join(" ")}` }] : []),
     {
-      command: `${name} mcp --help`,
-      description: "see all available commands",
+      command: text(`${name} mcp --help`),
+      description: text("see all available commands"),
     },
   ];
   const document = {
@@ -109,15 +113,19 @@ export const reportUnknownMcpSubcommand = (
       `'${subcommand}' is not a command for '${name} mcp'.${suggestion === undefined ? "" : ` Did you mean '${suggestion}'?`}`,
     ),
     cta: {
-      description:
+      description: text(
         commands.length === 1 ? "Suggested command:" : "Suggested commands:",
+      ),
       commands,
     },
   };
   (options.stdout ?? ((value: string) => process.stdout.write(value)))(
-    output.format === "json"
-      ? renderCliDocument(document, "json", process.stdout.isTTY === true)
-      : `${Formatter.format(document, output.format as Formatter.Format)}\n`,
+    // REA's document renderer owns JSON layout and Markdown escaping.
+    renderCliDocument(
+      document,
+      output.format as CliOutputFormat,
+      process.stdout.isTTY === true,
+    ),
   );
   (options.exit ?? ((code: number) => process.exit(code)))(1);
   return true;
