@@ -925,6 +925,13 @@ describe("unknown MCP subcommand output", () => {
         message: "'ad' is not a command for 'rea mcp'. Did you mean 'add'?",
         cta: { commands: [{ command: "rea mcp add --format json" }, {}] },
       });
+      // Only the subcommand is corrected; an equal option value is caller input.
+      const optionValue = await cli.run({
+        arguments: ["mcp", "ad", "--command", "ad", "--json"],
+      });
+      expect(optionValue.json).toMatchObject({
+        cta: { commands: [{ command: "rea mcp add --command ad --json" }, {}] },
+      });
       const redacted = await cli.run({
         arguments: ["mcp", "s3cret", "--sensitive-value", "s3cret", "--json"],
       });

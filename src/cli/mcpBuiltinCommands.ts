@@ -38,7 +38,7 @@ export const reportUnknownMcpSubcommand = (
   arguments_: readonly string[],
   options: ServeOptions,
 ): boolean => {
-  const { command } = splitIncurBuiltinArguments(arguments_);
+  const { command, commandIndices } = splitIncurBuiltinArguments(arguments_);
   const [entry, subcommand] = command;
   if (
     entry !== "mcp" ||
@@ -64,7 +64,7 @@ export const reportUnknownMcpSubcommand = (
       : [
           {
             command: text(
-              `${name} ${arguments_.map((token) => (token === subcommand ? suggestion : token)).join(" ")}`,
+              `${name} ${arguments_.map((token, index) => (index === commandIndices[1] ? suggestion : token)).join(" ")}`,
             ),
           },
         ]),
