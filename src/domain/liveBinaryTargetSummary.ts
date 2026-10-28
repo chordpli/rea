@@ -71,6 +71,8 @@ export const liveBinaryTargetSummaryVariants = [
       ...ZIP_PACKAGE_FORMATS,
       "asar",
       "godot-pck",
+      "unityfs",
+      "uimage",
       "dmg",
       "pkg",
       "intel-hex",

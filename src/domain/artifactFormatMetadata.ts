@@ -30,6 +30,39 @@ export const godotPckEntryMetadataSchema = z.strictObject({
   md5_status: z.enum(["declared", "all-zero"]),
 });
 
+/** Parsed source fields owned by the UnityFS adapter, independent of member bytes. */
+export const unityFsMetadataSchema = z.strictObject({
+  kind: z.literal("unityfs"),
+  signature: z.string(),
+  format_version: uint32,
+  player_version: z.string(),
+  engine_version: z.string(),
+  declared_size: offset,
+  flags: uint32,
+  blocks_info_compressed_size: uint32,
+  blocks_info_uncompressed_size: uint32,
+  blocks_info_at_end: z.boolean(),
+  data_start: offset.nullable(),
+  block_count: uint32.nullable(),
+  /** The 16-byte producer hash of the uncompressed block stream, as declared. */
+  data_hash: z.string().nullable(),
+  directory_status: z.enum([
+    "available",
+    "encrypted",
+    "unsupported-compression",
+    "unsupported-layout",
+  ]),
+});
+export type UnityFsMetadata = z.infer<typeof unityFsMetadataSchema>;
+
+export const unityFsEntryMetadataSchema = z.strictObject({
+  kind: z.literal("unityfs-entry"),
+  index: uint32,
+  source_path: z.string(),
+  declared_offset: offset,
+  flags: uint32,
+});
+
 /** Source cookie fields and derived directory counts without Python execution. */
 export const pyInstallerMetadataSchema = z.strictObject({
   kind: z.literal("pyinstaller"),
@@ -182,15 +215,56 @@ export const pyInstallerEntryDeclaration = (
   type_code: metadata.type_code,
 });
 
+/**
+ * U-Boot legacy uImage header facts. Declared addresses are facts from the
+ * header, not proven entry points; CRCs are verified before inventory.
+ */
+export const uImageMetadataSchema = z.strictObject({
+  kind: z.literal("uimage"),
+  magic: z.literal(0x27051956),
+  timestamp: uint32,
+  timestamp_iso: z.string(),
+  payload_size: uint32,
+  load_address: uint32,
+  entry_point: uint32,
+  header_crc32: uint32,
+  data_crc32: uint32,
+  crc_verified: z.literal(true),
+  os: z.number().int().min(0).max(255),
+  os_name: z.string(),
+  arch: z.number().int().min(0).max(255),
+  arch_name: z.string(),
+  type: z.number().int().min(0).max(255),
+  type_name: z.string(),
+  compression: z.number().int().min(0).max(255),
+  compression_name: z.string(),
+  name: z.string().nullable(),
+  name_bytes_hex: z.string().regex(/^[0-9a-f]{64}$/u),
+  sub_image_count: uint32,
+});
+export type UImageMetadata = z.infer<typeof uImageMetadataSchema>;
+
+/** One stored payload, or one multi-image sub-image, as stored bytes. */
+export const uImageEntryMetadataSchema = z.strictObject({
+  kind: z.literal("uimage-entry"),
+  role: z.enum(["payload", "sub-image"]),
+  index: uint32,
+});
+export type UImageEntryMetadata = z.infer<typeof uImageEntryMetadataSchema>;
+
 export const artifactFormatMetadataSchema = z.discriminatedUnion("kind", [
   godotPckMetadataSchema,
   godotPckEntryMetadataSchema,
+  unityFsMetadataSchema,
+  unityFsEntryMetadataSchema,
   pyInstallerMetadataSchema,
   pyInstallerEntryMetadataSchema,
   nodeSeaMetadataSchema,
   nodeSeaEntryMetadataSchema,
   hexRecordsMetadataSchema,
   hexRecordRegionMetadataSchema,
+  uImageMetadataSchema,
+  uImageEntryMetadataSchema,
 ]);
 export type ArtifactFormatMetadata = z.infer<
   typeof artifactFormatMetadataSchema

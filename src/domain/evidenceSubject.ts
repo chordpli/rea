@@ -25,6 +25,8 @@ export const evidenceSubjectFormatSchema = z.enum([
   "app-pack",
   "asar",
   "godot-pck",
+  "unityfs",
+  "uimage",
   "dmg",
   "pkg",
   "plist",

@@ -74,6 +74,7 @@ const formatSchema = z.enum([
   "app-pack",
   "asar",
   "godot-pck",
+  "unityfs",
   "dmg",
   "pkg",
   "intel-hex",
@@ -81,6 +82,7 @@ const formatSchema = z.enum([
   "plist",
   "javascript",
   "source-map",
+  "uimage",
 ]);
 const kindSchema = z.enum(["executable", "database", "archive", "artifact"]);
 const subjectBaseSchema = z.object({

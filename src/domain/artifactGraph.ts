@@ -61,6 +61,8 @@ const artifactFormatSchema = z.enum([
   "pkg",
   "asar",
   "godot-pck",
+  "unityfs",
+  "uimage",
   "javascript-bundle",
   "source-map",
   "mach-o-universal",
@@ -95,6 +97,8 @@ const artifactFormatSchema = z.enum([
 const artifactContentFormatSchema = artifactFormatSchema.extract([
   "zip",
   "godot-pck",
+  "unityfs",
+  "uimage",
   "intel-hex",
   "srec",
   "mach-o-universal",
