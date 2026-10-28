@@ -37,7 +37,8 @@ const PRECEDING_BUILTIN_FLAGS: ReadonlySet<string> = new Set([
   "--mcp",
 ]);
 
-const PLAIN_SHELL_WORD = /^[\w./+=:,-]+$/u;
+// zsh expands a word that starts with `=` to an executable path.
+const PLAIN_SHELL_WORD = /^(?!=)[\w./+=:,-]+$/u;
 
 /**
  * Incur 0.6.1 rejects an unknown `mcp` subcommand in TOON regardless of the

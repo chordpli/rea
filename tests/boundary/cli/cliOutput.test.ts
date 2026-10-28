@@ -992,7 +992,7 @@ describe("unknown MCP subcommand output", () => {
         },
       });
       expect(spaced.stdout).not.toContain("rea mcp add");
-      for (const shellActive of ["@args", "%PATH%"]) {
+      for (const shellActive of ["@args", "%PATH%", "=node"]) {
         const result = await cli.run({
           arguments: ["mcp", "ad", "--command", shellActive, "--json"],
         });
