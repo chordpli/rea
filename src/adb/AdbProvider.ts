@@ -891,8 +891,8 @@ export class AdbProvider {
       ((rootOptions) => PrivateRuntimeRoot.create(rootOptions));
   }
 
-  private selection(): AdbBinarySelection {
-    return resolveAdbBinary(this.environment);
+  private selection(signal?: AbortSignal): Promise<AdbBinarySelection> {
+    return resolveAdbBinary(this.environment, process.platform, signal);
   }
 
   /** Probe the selected adb binary; never contacts devices or the server. */
@@ -900,7 +900,7 @@ export class AdbProvider {
     signal?: AbortSignal,
   ): Promise<ProviderAvailability> {
     try {
-      const selection = this.selection();
+      const selection = await this.selection(signal);
       await inspectAdbClient(selection, signal);
       return {
         status: "available",
@@ -1333,7 +1333,7 @@ export class AdbProvider {
     let selection: AdbBinarySelection;
     let identity: AdbClientIdentity;
     try {
-      selection = this.selection();
+      selection = await this.selection(signal);
       identity = await inspectAdbClient(selection, signal);
     } catch (cause) {
       if (cause instanceof AnalysisError)
