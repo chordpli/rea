@@ -15,6 +15,7 @@ import {
   parseCliOutputArguments,
 } from "../cliOutput.js";
 import { bashCompletionScript } from "./bashCompletionRegistration.js";
+import { MCP_BUILTIN_SUBCOMMANDS } from "./mcpBuiltinCommands.js";
 
 type Commands = Parameters<typeof Completions.complete>[0];
 type CompletionCli = Parameters<typeof Cli.toCommands.get>[0];
@@ -55,24 +56,7 @@ const completionCommands = (cli: CompletionCli): Commands => {
   commands.set("mcp", {
     _group: true,
     description: "Register as MCP server",
-    commands: new Map([
-      [
-        "add",
-        {
-          description: "Register as MCP server",
-          alias: { command: "c" },
-          options: z.object({
-            agent: z.string().optional(),
-            command: z.string().optional(),
-            noGlobal: z.boolean().optional(),
-          }),
-        },
-      ],
-      [
-        "doctor",
-        { description: "Validate MCP server startup and tool listing" },
-      ],
-    ]),
+    commands: MCP_BUILTIN_SUBCOMMANDS,
   });
   commands.set("completions", {
     _group: true,

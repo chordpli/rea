@@ -69,6 +69,7 @@ import { excludeDeclaredSensitiveArguments } from "./cli/explicitSensitiveArgume
 import { rejectSurplusCliArguments } from "./cli/strictPositionals.js";
 import { presentCliArgumentErrors } from "./cli/argumentErrors.js";
 import { createCliCompletions } from "./cli/completions.js";
+import { reportUnknownMcpSubcommand } from "./cli/mcpBuiltinCommands.js";
 import { registerGuidedWorkflowCommands } from "./cli/guidedWorkflowCommands.js";
 
 export { closeCliJavaScriptResources } from "./cli/javascriptApplicationAnalysis.js";
@@ -212,9 +213,16 @@ export const createCli = (
           normalizeCliArguments(arguments_),
           options ?? {},
           (tokens, selected) =>
-            serveDeclared(tokens, selected, (declared, declaredOptions) =>
-              serve(adaptCliOutputArgumentsForIncur(declared), declaredOptions),
-            ),
+            serveDeclared(tokens, selected, (declared, declaredOptions) => {
+              const incurArguments = adaptCliOutputArgumentsForIncur(declared);
+              return reportUnknownMcpSubcommand(
+                cli.name,
+                incurArguments,
+                declaredOptions,
+              )
+                ? Promise.resolve()
+                : serve(incurArguments, declaredOptions);
+            }),
         );
   return cli;
 };

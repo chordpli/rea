@@ -6,7 +6,10 @@ import { describe, expect, it } from "vitest";
 
 import { workspaceCliTest } from "../../support/cli/workspaceCliFixture.js";
 
-import { normalizeCliArguments } from "../../../src/cliBuiltinArguments.js";
+import {
+  normalizeCliArguments,
+  adaptCliOutputArgumentsForIncur,
+} from "../../../src/cliBuiltinArguments.js";
 import {
   renderCliOutputArgumentError,
   renderCliDocument,
@@ -14,7 +17,6 @@ import {
   renderVersionReport,
   parseCliOutputArguments,
 } from "../../../src/cliOutput.js";
-import { adaptCliOutputArgumentsForIncur } from "../../../src/cliBuiltinArguments.js";
 
 const CLI_INTEGRATION_TIMEOUT_MS = 60_000;
 
@@ -872,4 +874,72 @@ describe("version report rendering", () => {
       renderVersionReport(parseCliOutputArguments(["--version"]), host, true),
     ).toBeUndefined();
   });
+});
+
+describe("unknown MCP subcommand output", () => {
+  workspaceCliTest(
+    "reports the rejection in the explicitly selected format",
+    async ({ cli }) => {
+      const expected = {
+        code: "COMMAND_NOT_FOUND",
+        message: "'bogus' is not a command for 'rea mcp'.",
+        cta: {
+          commands: [
+            {
+              command: "rea mcp --help",
+              description: "see all available commands",
+            },
+          ],
+        },
+      };
+      for (const selection of [["--format", "json"], ["--json"]]) {
+        const result = await cli.run({
+          arguments: ["mcp", "bogus", ...selection],
+        });
+        expect(result.exitCode).toBe(1);
+        expect(result.json).toMatchObject(expected);
+      }
+      const yaml = await cli.run({
+        arguments: ["mcp", "bogus", "--format", "yaml"],
+      });
+      expect(yaml.exitCode).toBe(1);
+      expect(yaml.stdout).toContain("    - command: rea mcp --help\n");
+      const markdown = await cli.run({
+        arguments: ["mcp", "bogus", "--format", "md"],
+      });
+      expect(markdown.exitCode).toBe(1);
+      expect(markdown.stdout).toMatch(/^## code\n\nCOMMAND_NOT_FOUND\n/u);
+      const jsonLines = await cli.run({
+        arguments: ["mcp", "bogus", "--format", "jsonl"],
+      });
+      expect(jsonLines.exitCode).toBe(1);
+      expect(JSON.parse(jsonLines.stdout)).toMatchObject({
+        type: "error",
+        ok: false,
+        result: expected,
+      });
+      const suggested = await cli.run({
+        arguments: ["mcp", "ad", "--format", "json"],
+      });
+      expect(suggested.json).toMatchObject({
+        message: "'ad' is not a command for 'rea mcp'. Did you mean 'add'?",
+        cta: { commands: [{ command: "rea mcp add --format json" }, {}] },
+      });
+      const redacted = await cli.run({
+        arguments: ["mcp", "s3cret", "--sensitive-value", "s3cret", "--json"],
+      });
+      expect(redacted.exitCode).toBe(1);
+      expect(redacted.stdout).not.toContain("s3cret");
+      expect(redacted.json).toMatchObject({ code: "COMMAND_NOT_FOUND" });
+      // An empty token keeps Incur's group help.
+      const help = await cli.run({ arguments: ["mcp", "", "--json"] });
+      expect(help.exitCode).toBe(0);
+      expect(help.stdout).toContain("rea mcp");
+      // Without a selected format, Incur's default TOON remains the output.
+      const toon = await cli.run({ arguments: ["mcp", "bogus"] });
+      expect(toon.exitCode).toBe(1);
+      expect(toon.stdout).toMatch(/^code: COMMAND_NOT_FOUND\n/u);
+    },
+    CLI_INTEGRATION_TIMEOUT_MS,
+  );
 });
