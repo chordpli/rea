@@ -898,6 +898,7 @@ describe("unknown MCP subcommand output", () => {
         });
         expect(result.exitCode).toBe(1);
         expect(result.json).toMatchObject(expected);
+        expect(result.stdout).toBe(`${JSON.stringify(result.json)}\n`);
       }
       const yaml = await cli.run({
         arguments: ["mcp", "bogus", "--format", "yaml"],
@@ -954,7 +955,9 @@ describe("unknown MCP subcommand output", () => {
       ]) {
         const builtinValue = await cli.run({ arguments: arguments_ });
         expect(builtinValue.exitCode).toBe(1);
-        expect(builtinValue.stdout).toContain('"code": "COMMAND_NOT_FOUND"');
+        expect(JSON.parse(builtinValue.stdout)).toMatchObject({
+          code: "COMMAND_NOT_FOUND",
+        });
       }
       // The suggestion keeps the caller's delimited output selection.
       const delimited = await cli.run({
@@ -989,6 +992,16 @@ describe("unknown MCP subcommand output", () => {
         },
       });
       expect(spaced.stdout).not.toContain("rea mcp add");
+      for (const shellActive of ["@args", "%PATH%"]) {
+        const result = await cli.run({
+          arguments: ["mcp", "ad", "--command", shellActive, "--json"],
+        });
+        expect(result.exitCode).toBe(1);
+        expect(result.stdout).not.toContain("rea mcp add");
+        expect(result.json).toMatchObject({
+          cta: { commands: [{ command: "rea mcp --help" }] },
+        });
+      }
       const redacted = await cli.run({
         arguments: ["mcp", "s3cret", "--sensitive-value", "s3cret", "--json"],
       });

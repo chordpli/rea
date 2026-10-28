@@ -5,7 +5,7 @@ import {
   declaredSensitiveValues,
   splitIncurBuiltinArguments,
 } from "../cliBuiltinArguments.js";
-import { parseCliOutputArguments } from "../cliOutput.js";
+import { parseCliOutputArguments, renderCliDocument } from "../cliOutput.js";
 import { redactExplicitText } from "../domain/explicitSensitiveValues.js";
 import type { CliInstance } from "./types.js";
 
@@ -37,7 +37,7 @@ const PRECEDING_BUILTIN_FLAGS: ReadonlySet<string> = new Set([
   "--mcp",
 ]);
 
-const PLAIN_SHELL_WORD = /^[\w./@%+=:,-]+$/u;
+const PLAIN_SHELL_WORD = /^[\w./+=:,-]+$/u;
 
 /**
  * Incur 0.6.1 rejects an unknown `mcp` subcommand in TOON regardless of the
@@ -114,7 +114,9 @@ export const reportUnknownMcpSubcommand = (
     },
   };
   (options.stdout ?? ((value: string) => process.stdout.write(value)))(
-    `${Formatter.format(document, output.format as Formatter.Format)}\n`,
+    output.format === "json"
+      ? renderCliDocument(document, "json", process.stdout.isTTY === true)
+      : `${Formatter.format(document, output.format as Formatter.Format)}\n`,
   );
   (options.exit ?? ((code: number) => process.exit(code)))(1);
   return true;
