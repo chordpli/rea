@@ -51,20 +51,28 @@ export const reportUnknownMcpSubcommand = (
 ): boolean => {
   const { command, commandIndices } = splitIncurBuiltinArguments(arguments_);
   const [entry, subcommand] = command;
+  // Incur receives JSON for REA's delimited formats and no `--columns`.
+  const incurArguments = adaptCliOutputArgumentsForIncur(arguments_);
+  const incurOutputValues = new Set(
+    splitIncurBuiltinArguments(incurArguments).outputValues.map(
+      ({ index }) => index,
+    ),
+  );
   if (
     entry !== "mcp" ||
     // Incur shows group help for an empty token and owns flag-shaped globals.
     !subcommand ||
     subcommand.startsWith("-") ||
     MCP_BUILTIN_SUBCOMMANDS.has(subcommand) ||
-    // Incur handles these builtins before its `mcp` subcommand branch.
-    arguments_.some((token) => PRECEDING_BUILTIN_FLAGS.has(token))
+    // Incur serves these builtins before its `mcp` subcommand branch. An
+    // output flag's value is data, even when it is spelled like a builtin.
+    incurArguments.some(
+      (token, index) =>
+        !incurOutputValues.has(index) && PRECEDING_BUILTIN_FLAGS.has(token),
+    )
   )
     return false;
-  // Incur receives JSON for REA's delimited formats.
-  const output = parseCliOutputArguments(
-    adaptCliOutputArgumentsForIncur(arguments_),
-  );
+  const output = parseCliOutputArguments(incurArguments);
   // Invalid output controls keep Incur's own parse diagnostic.
   if (!output.formatExplicit || !output.validation.ok) return false;
   const sensitive = declaredSensitiveValues(command);

@@ -938,6 +938,24 @@ describe("unknown MCP subcommand output", () => {
       });
       expect(manifest.exitCode).toBe(0);
       expect(manifest.stdout).not.toContain("COMMAND_NOT_FOUND");
+      // An output value spelled like a builtin is data, not that builtin.
+      for (const arguments_ of [
+        [
+          "mcp",
+          "ad",
+          "--format",
+          "csv",
+          "--filter-output",
+          "cta.commands",
+          "--columns",
+          "--llms",
+        ],
+        ["mcp", "ad", "--json", "--filter-output", "--llms"],
+      ]) {
+        const builtinValue = await cli.run({ arguments: arguments_ });
+        expect(builtinValue.exitCode).toBe(1);
+        expect(builtinValue.stdout).toContain('"code": "COMMAND_NOT_FOUND"');
+      }
       // The suggestion keeps the caller's delimited output selection.
       const delimited = await cli.run({
         arguments: [
