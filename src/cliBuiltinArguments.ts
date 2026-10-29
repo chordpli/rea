@@ -37,6 +37,8 @@ export interface IncurBuiltinArgumentSplit {
   readonly command: readonly string[];
   /** Argument position of each `command` token. */
   readonly commandIndices: readonly number[];
+  /** Valueless global flags extracted by Incur before command dispatch. */
+  readonly flags: ReadonlySet<string>;
   /** Positions of nonempty values consumed by valued output flags. */
   readonly outputValues: readonly {
     readonly flag: string;
@@ -54,6 +56,7 @@ export const splitIncurBuiltinArguments = (
 ): IncurBuiltinArgumentSplit => {
   const command: string[] = [];
   const commandIndices: number[] = [];
+  const flags = new Set<string>();
   const outputValues: { readonly flag: string; readonly index: number }[] = [];
   for (let index = 0; index < arguments_.length; index += 1) {
     const argument = arguments_[index]!;
@@ -62,8 +65,10 @@ export const splitIncurBuiltinArguments = (
       INCUR_BUILTIN_FLAGS.has(argument) ||
       // A following value belongs to a command-local `--version` option.
       (argument === "--version" && (next === undefined || next.startsWith("-")))
-    )
+    ) {
+      flags.add(argument);
       continue;
+    }
     if (VALUED_OUTPUT_FLAGS.has(argument) && next) {
       outputValues.push({ flag: argument, index: index + 1 });
       index += 1;
@@ -72,7 +77,7 @@ export const splitIncurBuiltinArguments = (
     command.push(argument);
     commandIndices.push(index);
   }
-  return { command, commandIndices, outputValues };
+  return { command, commandIndices, flags, outputValues };
 };
 
 /**
