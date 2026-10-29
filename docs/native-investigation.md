@@ -757,6 +757,11 @@ complete observation.
   files and universal slices before metadata decoding. CPU subtypes and
   capability bits remain source facts; an `arm64` request may select an
   `arm64e` image under the existing slice preference policy.
+  Objective-C class, protocol and category lists require eight-byte entries;
+  Swift type and conformance sections require four-byte entries. Misaligned
+  section lengths and unsupported non-PowerPC big-endian CPU declarations return
+  `unsupported_target` with the selected path and precise reason. Recovery
+  selects a well-formed or supported artifact and reopens that target.
   The byte reader holds the whole selected file in memory, so it admits files up
   to 64 MiB / 67108864 bytes by default. Select a larger budget with
   `max_input_bytes` (CLI `--max-input-bytes`), at most 1 GiB / 1073741824
@@ -851,7 +856,11 @@ complete observation.
   and `__objc_catlist` categories are also decoded. Categories record the
   extended class, local or external, plus
   their methods, protocols and properties; category methods appear as
-  implementations with a `category`. Swift field-offset globals that are only
+  implementations with a `category`. A category whose class reference is null,
+  or is bound to a symbol other than `_OBJC_CLASS_$_`, such as the `_$s…CN`
+  metadata symbol of another module's Swift class, keeps a null class, and
+  `objc_properties_categories` coverage names that reference. Swift
+  field-offset globals that are only
   initialized at runtime stay unresolved. Generic, resilient, async and
   coroutine tables, and inherited overrides, have explicit unsupported or
   partial coverage. Other providers retain the
