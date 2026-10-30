@@ -597,10 +597,12 @@ reach WABT or change the original source Evidence ID.
 Completed `inspect_macho` Evidence supports a summary and
 `view: {kind: "macho", facet: "exports", offset: 0, limit: 64}`. Facets are
 `entrypoints`, `architectures`, `build_metadata`, `load_commands`,
-`dependencies`, `imports`, `exports`, `segments`, and `provenance`; pages return
-the original rows. The summary keeps the selected slice, header fields and UUID,
-and replaces each collection with its returned count, reported total and
-`exhaustive` flag. Each page repeats the paged collection's `source_total` and
+`dependencies`, `imports`, `exports`, `segments`, `encryption`, and
+`provenance`; pages return the original rows. Evidence retained before
+`encryption` was reported pages no encryption rows and reports that collection
+as non-exhaustive with an unknown status. The summary keeps the selected
+slice, header fields and UUID, and replaces each collection with its returned
+count, reported total and `exhaustive` flag. Each page repeats the paged collection's `source_total` and
 `source_exhaustive`; exhausting a non-exhaustive collection does not establish
 that unreturned symbols are absent. Large frameworks return megabytes of
 symbols (Electron Framework: 2.5 MB of imports and exports, 3.3 KB as a
@@ -797,6 +799,22 @@ File cleanup can also remain after snapshot publication or after profile
 inspection fails or is cancelled before a provider client exists. If no client
 remains, no provider run or health observation is available; follow the cleanup
 error's reported resources.
+
+## Initial target at startup
+
+MCP normally starts without a target; use `open_binary` to select one during the
+session. To open a target before serving MCP, set `HOPPER_TARGET_PATH` to the
+selected path in REA's launch environment. `HOPPER_TARGET_KIND` accepts
+`executable` (the default) or `database`. Despite the names, these are initial
+session settings; the configured provider still determines how the target is
+opened. If the initial open fails, REA reports the failure and exits with code 1
+without serving MCP. Shutdown during startup cancels and cleans up the open as
+described below.
+
+The source-checkout helper `node scripts/print-mcp-config.mjs /path/to/target`
+prints a registration containing these settings; `--kind database` selects the
+database kind. The helper is not part of the installed npm package. `rea setup`
+does not copy these one-shot target settings into generated registrations.
 
 ## Transports
 
