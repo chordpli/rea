@@ -297,8 +297,14 @@ const startStoppableCommand = (
         : ["ignore", "pipe", "pipe"],
     killSignal: stopSignal,
   });
+  child.on("error", (error: Error) => {
+    processError ??= error;
+  });
+  // After an EMFILE or ENFILE spawn failure Node creates no stdio and reports
+  // the failure only through the error and close events.
+  const stdio = child.stdio as typeof child.stdio | undefined;
   if (lifetimePipe === true) {
-    const pipe = child.stdio[3];
+    const pipe = stdio?.[3];
     if (pipe != null && "resume" in pipe) pipe.resume();
   }
   // The first stop request names the failure; a later one is not resent.
@@ -312,12 +318,12 @@ const startStoppableCommand = (
     stop("abort");
   };
   const capture = (
-    stream: NonNullable<typeof child.stdout>,
+    stream: typeof child.stdout | undefined,
     name: "stdout" | "stderr",
   ) => {
     const chunks: Buffer[] = [];
     let retained = 0;
-    stream.on("data", (chunk: Buffer) => {
+    stream?.on("data", (chunk: Buffer) => {
       const remaining = Math.max(0, Math.floor(maxBuffer - retained));
       if (chunk.byteLength <= remaining) {
         chunks.push(chunk);
@@ -336,11 +342,8 @@ const startStoppableCommand = (
     });
     return () => Buffer.concat(chunks, retained);
   };
-  const stdout = capture(child.stdout!, "stdout");
-  const stderr = capture(child.stderr!, "stderr");
-  child.on("error", (error: Error) => {
-    processError ??= error;
-  });
+  const stdout = capture(stdio?.[1], "stdout");
+  const stderr = capture(stdio?.[2], "stderr");
   child.on("exit", (code, exitSignal) => {
     // A failed root has completed its outcome even while descendants retain
     // its pipes. Finalization cancellation cannot replace that failure.
