@@ -2,7 +2,7 @@
 name: reverse-engineer-anything
 description: Reverse engineer native, managed, Electron/JavaScript, packaged, firmware, and browser targets with REA, and build agent environments (AgentEnv bundles) of web applications from a live instance or a capture. Use shipped-artifact or requested runtime evidence to explain features, compare versions, decompile code, or guide a reconstruction. Skip REA for ordinary source-repository architecture analysis.
 metadata:
-  version: "53"
+  version: "59"
 ---
 
 # REA
@@ -56,7 +56,7 @@ A plugin-only doctor result of `missing` does not call for `rea setup`.
 REA setup never installs or upgrades Node.js, npm, Homebrew, Java, Ghidra, IDA,
 JADX, Kuna, Binwalk, or Unblob. Use existing prerequisites; do not install unrelated
 software to repair MCP registration. For an unsupported client, use manual stdio
-registration with a version-pinned `rea-agents` package or continue through the CLI.
+registration with an existing installation’s absolute runtime and entry script, or continue through the CLI.
 
 A concrete CLI fallback for an operator-supplied JavaScript tree or ASAR is:
 
@@ -69,7 +69,10 @@ graph, limitations, and unknowns with the same care as an MCP result; the CLI
 returns the Evidence record directly. This fallback does not establish that
 MCP is configured. Native CLI tasks still require their selected engine.
 Prefer an existing `rea` CLI. When none is installed and REA package acquisition
-is within the authorized scope, use `npx -y rea-agents@latest` in its place.
+is within the authorized scope, use `npx -y rea-agents@latest` in its place from a
+trusted directory outside the target project, with absolute target paths. Managed
+setup binds the current installation directly; retain its runtime and package
+cache entry, or restore that installation before repairing its registration.
 For setup-owned registration, configuration repair starts with a read-only setup plan; show paths, backups and
 skill replacement before applying authorized changes. Preserve existing approval
 and target-execution boundaries.
@@ -91,6 +94,9 @@ explicit path or endpoint and do not need it.
   than extra calls and schemas. Runtime options are metadata, not files.
   Compact delivery still inventories and hashes members. See the
   [Python packaged applications guide](https://github.com/morluto/rea/blob/main/docs/python-packaged-applications.md).
+- Bun `--compile` executable: `open_binary`, then `inspect_artifact`; the Bun
+  module graph is the application layer. Extract stored modules and analyze the
+  JavaScript. See [Bun standalone executables](https://github.com/morluto/rea/blob/main/docs/bun-standalone.md).
 - Apple app plist, Interface Builder, asset catalog, or keyed archive resources:
   `open_bundle_resources`, then the selected resource tool. This does not
   require `CFBundleExecutable` or a deep provider. Resource sessions have no
@@ -103,6 +109,8 @@ explicit path or endpoint and do not need it.
   `extract_firmware` when extraction is requested, with a caller-selected new
   absolute output directory. These tools use caller-supplied Binwalk/Unblob on
   Linux; see the [firmware guide](https://github.com/morluto/rea/blob/main/docs/firmware-analysis.md).
+- ESP32-family app or bootloader image (`0xE9` magic): `inspect_artifact`
+  without a provider; see the ESP section of `references/native-and-artifacts.md`.
 - .NET NativeAOT PE/ELF: native Ghidra analysis. Native code can yield pseudocode;
   consult the NativeAOT workflow in `references/native-and-artifacts.md` for
   optional metadata recovery and its supported host/layout boundary.
@@ -142,7 +150,9 @@ explicit path or endpoint and do not need it.
   and field names/types before choosing fields for `inspect_packet_capture`.
   Query/page the relevant records; registrations do not establish observed traffic.
 - Recorded packet captures: `inspect_packet_capture` with selected TShark fields,
-  display filters and decode-as rules. Requires Linux, util-linux prlimit and `REA_TSHARK_COMMAND`; see
+  display filters and decode-as rules. Requires Linux, util-linux prlimit and
+  TShark 4.x on an absolute `PATH` entry or via the optional absolute
+  `REA_TSHARK_COMMAND` override; see
   [capture guide](https://github.com/morluto/rea/blob/main/docs/packet-captures.md).
   Packet limits count input packets before filtering. Output defaults to 50 matching
   frames; use `match_offset` / `match_limit` for later pages, or explicit null
@@ -391,9 +401,18 @@ call `analyze_javascript_application` or `inspect_binary_layout` with
 a flag: its default reply is the summary, and the complete dossier stays
 retained under `parent_evidence_id` for facet paging. Pass that ID as a
 `retained-evidence` reference to `compare_functions`, or inside
-`match_native_functions` `left_observations`/`right_observations`; request
-`"detail": "complete"` only when the dossier must travel inline, as
-`build_call_path` requires.
+`match_native_functions` `left_observations`/`right_observations` or
+`build_call_path.functions`; request `"detail": "complete"` only when the
+dossier must travel inline.
+Use the same exact-reference form in other advertised logical Evidence inputs,
+including optional sources, arrays and nested sources across domains. Each
+source can independently be inline or retained; preserve its source identity,
+coverage, partial facts and unknowns. A summary or inspection page has its own
+Evidence ID: use `normalized_result.parent_evidence_id` when the consumer needs
+the complete source. For portable CLI follow-ups, commands advertising
+`--evidence-bundle` resolve references from that selected exported bundle.
+See [Evidence composition](references/evidence-workflows.md) for scope and
+recovery; file selectors are supported only where explicitly advertised.
 Page module identities and select the returned `node_id` before requesting an
 item; a single file path can represent several graph roles. Do not repeat an
 identical analysis or rejected call without a changed input or resolved blocker.
