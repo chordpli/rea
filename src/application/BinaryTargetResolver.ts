@@ -427,10 +427,8 @@ const readOpenedBinaryTarget = async (
         ),
       );
     return ok({
-      path,
-      sourcePath,
+      ...(await identity()),
       artifactSelectedPath: selectedPath,
-      sha256: await sha256Handle(handle, path, metadata, signal),
       kind: "archive",
       format: "esp-flash-image",
       espFlash: {
